@@ -122,6 +122,7 @@ fun VideoPlayer(
     enablePipWhenBackPressed: Boolean = false,
     handleAudioFocus: Boolean = true,
     playerInstance: ExoPlayer.() -> Unit = {},
+    controllerVisibilityListener: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     var currentTime by remember { mutableStateOf(0L) }
@@ -177,6 +178,9 @@ fun VideoPlayer(
 
     LaunchedEffect(usePlayerController) {
         defaultPlayerView.useController = usePlayerController
+        defaultPlayerView.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener {
+            controllerVisibilityListener(it)
+        })
     }
 
     LaunchedEffect(player) {
