@@ -49,6 +49,7 @@ import androidx.media3.common.util.RepeatModeUtil.REPEAT_TOGGLE_MODE_ONE
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
@@ -63,8 +64,14 @@ import io.sanghun.compose.video.uri.VideoPlayerMediaItem
 import io.sanghun.compose.video.uri.toUri
 import io.sanghun.compose.video.util.findActivity
 import io.sanghun.compose.video.util.setFullScreen
-import java.util.*
 import kotlinx.coroutines.delay
+import okhttp3.CookieJar
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import java.net.CookieManager
+import java.net.CookiePolicy
+import java.util.*
+
 
 /**
  * [VideoPlayer] is UI component that can play video in Jetpack Compose. It works based on ExoPlayer.
@@ -122,16 +129,17 @@ fun VideoPlayer(
     enablePipWhenBackPressed: Boolean = false,
     handleAudioFocus: Boolean = true,
     playerInstance: ExoPlayer.() -> Unit = {},
-    controllerVisibilityListener: (Int) -> Unit = {}
+    controllerVisibilityListener: (Int) -> Unit = {},
+    localFile: Boolean = false
 ) {
     val context = LocalContext.current
     var currentTime by remember { mutableStateOf(0L) }
 
     var mediaSession = remember<MediaSession?> { null }
 
-    val player = remember {
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
 
+
+    val player = remember {
         ExoPlayer.Builder(context)
             .setSeekBackIncrementMs(seekBeforeMilliSeconds)
             .setSeekForwardIncrementMs(seekAfterMilliSeconds)
@@ -145,10 +153,20 @@ fun VideoPlayer(
             .apply {
                 val cache = VideoPlayerCacheManager.getCache()
                 if (cache != null) {
+                    val httpDataSourceFactory = DefaultHttpDataSource.Factory()
                     val cacheDataSourceFactory = CacheDataSource.Factory()
                         .setCache(cache)
                         .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context, httpDataSourceFactory))
                     setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory))
+                }
+                if (localFile) {
+                    val client = OkHttpClient.Builder()
+                        .addInterceptor(HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BODY
+                        })
+                        .build()
+                    val httpDataSourceFactory = OkHttpDataSource.Factory(client)
+                    setMediaSourceFactory(DefaultMediaSourceFactory(httpDataSourceFactory))
                 }
             }
             .build()
@@ -190,7 +208,11 @@ fun VideoPlayer(
     LaunchedEffect(mediaItems, player) {
         mediaSession?.release()
         mediaSession = MediaSession.Builder(context, ForwardingPlayer(player))
-            .setId("VideoPlayerMediaSession_${UUID.randomUUID().toString().lowercase().split("-").first()}")
+            .setId(
+                "VideoPlayerMediaSession_${
+                    UUID.randomUUID().toString().lowercase().split("-").first()
+                }"
+            )
             .build()
         val exoPlayerMediaItems = mediaItems.map {
             val uri = it.toUri(context)

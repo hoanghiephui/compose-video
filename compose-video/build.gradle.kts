@@ -46,4 +46,7 @@ dependencies {
     implementation(libs.bundles.compose)
     implementation(libs.bundles.media3)
     implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.media3.exoplayer.okhttp)
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }
