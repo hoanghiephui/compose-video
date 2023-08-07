@@ -65,11 +65,7 @@ import io.sanghun.compose.video.uri.toUri
 import io.sanghun.compose.video.util.findActivity
 import io.sanghun.compose.video.util.setFullScreen
 import kotlinx.coroutines.delay
-import okhttp3.CookieJar
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import java.net.CookieManager
-import java.net.CookiePolicy
 import java.util.*
 
 
@@ -161,9 +157,6 @@ fun VideoPlayer(
                 }
                 if (localFile) {
                     val client = OkHttpClient.Builder()
-                        .addInterceptor(HttpLoggingInterceptor().apply {
-                            level = HttpLoggingInterceptor.Level.BODY
-                        })
                         .build()
                     val httpDataSourceFactory = OkHttpDataSource.Factory(client)
                     setMediaSourceFactory(DefaultMediaSourceFactory(httpDataSourceFactory))
